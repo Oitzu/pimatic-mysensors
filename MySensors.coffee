@@ -178,6 +178,7 @@ module.exports = (env) ->
         @emit('reconnect', error)
       )
       @driver.on('close', =>
+        env.logger.info('Connection lost to the gateway')
         @emit('close')
       )
       @driver.on("data", (data) =>
