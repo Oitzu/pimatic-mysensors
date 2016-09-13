@@ -157,7 +157,7 @@ module.exports = (env) ->
   P_FLOAT32          = 7
 
   class Board extends events.EventEmitter
-
+    
     constructor: (framework,config) ->
       @config = config
       @framework = framework
@@ -172,13 +172,20 @@ module.exports = (env) ->
           @driver = new EthernetDriver(@config.driverOptions)
 
       @driver.on('error', (error) => 
-        env.logger.error error
+        env.logger.debug error
       )
-      @driver.on('reconnect', (error) =>
-        @emit('reconnect', error)
+      @driver.on('reconnect', (retries) =>
+        if retries > 0
+          env.logger.error('Lost connection to MySensors Gateway. Trying to reconnect.')
+          self = this
+          setTimeout ->
+            self.connect(2500, retries)
+          , 30000/retries
+          @emit('reconnect')
+        else
+          env.logger.error('Could not connect to MySensors Gateway.')
       )
       @driver.on('close', =>
-        env.logger.info('Connection lost to the gateway')
         @emit('close')
       )
       @driver.on("data", (data) =>
@@ -188,10 +195,15 @@ module.exports = (env) ->
         @emit "line", line
         @_rfReceived(line)
       )
-
+      @driver.on("ready", =>
+        env.logger.info("Connected to MySensors Gateway.")
+      )
+      @driver.on("connect", =>
+        env.logger.info("Connecting to MySensors Gateway.")
+        @connect(timeout, retries);
+      )
 
     connect: (timeout = 2500, retries = 3) ->
-
       return @pendingConnect = @driver.connect(timeout, retries)
 
     disconnect: ->
@@ -379,9 +391,7 @@ module.exports = (env) ->
     init: (app, @framework, @config) =>
       @board = new Board(@framework, @config)
 
-      @board.connect().then( =>
-        env.logger.info("Connected to MySensors Gateway.")
-      )
+      @board.connect()
 
       deviceConfigDef = require("./device-config-schema")
 

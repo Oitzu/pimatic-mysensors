@@ -18,7 +18,8 @@ class EthernetDriver extends events.EventEmitter
 
      # reject promise on close
     @connection.on 'close', () =>
-      @emit('close')
+      console.log "CLOSE"
+      @emit('reconnect', retries-1)
     
     # setup data listener
     @connection.on 'data', (data) => 
