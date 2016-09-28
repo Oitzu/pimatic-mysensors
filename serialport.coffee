@@ -23,7 +23,9 @@ class SerialPortDriver extends events.EventEmitter
     @serialPort.removeAllListeners('close')
 
     @serialPort.on('error', (error) => @emit('error', error) )
-    @serialPort.on('close', => @emit 'close' )
+    @serialPort.on 'close', () =>
+      console.log "CLOSE"
+      @emit('reconnect')
 
     return @serialPort.openAsync().then( =>
       #resolver = null

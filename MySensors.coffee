@@ -161,8 +161,10 @@ module.exports = (env) ->
     constructor: (framework,config) ->
       @config = config
       @framework = framework
+      @connecting = false
       assert @config.driver in ["serialport", "ethernet"]
       # setup a new driver
+      retries = 10
       switch @config.driver
         when "serialport"
           SerialPortDriver = require './serialport'
@@ -174,16 +176,17 @@ module.exports = (env) ->
       @driver.on('error', (error) => 
         env.logger.debug error
       )
-      @driver.on('reconnect', (retries) =>
+      @driver.on('reconnect', (error) =>
         if retries > 0
           env.logger.error('Lost connection to MySensors Gateway. Trying to reconnect.')
+          retries--
           self = this
           setTimeout ->
-            self.connect(2500, retries)
-          , 30000/retries
+            self.connect(2500)
+          , 5000
           @emit('reconnect')
         else
-          env.logger.error('Could not connect to MySensors Gateway.')
+          env.logger.error('Could not connect to MySensors Gateway. Giving up.')
       )
       @driver.on('close', =>
         @emit('close')
@@ -197,14 +200,17 @@ module.exports = (env) ->
       )
       @driver.on("ready", =>
         env.logger.info("Connected to MySensors Gateway.")
+        retries = 10
+        @connecting = false
       )
       @driver.on("connect", =>
         env.logger.info("Connecting to MySensors Gateway.")
-        @connect(timeout, retries);
+        @connecting = true
+        @connect(timeout);
       )
 
-    connect: (timeout = 2500, retries = 3) ->
-      return @pendingConnect = @driver.connect(timeout, retries)
+    connect: (timeout = 2500) ->
+      return @pendingConnect = @driver.connect(timeout)
 
     disconnect: ->
 

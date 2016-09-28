@@ -8,18 +8,20 @@ class EthernetDriver extends events.EventEmitter
     @port = protocolOptions.port
     @host = protocolOptions.host
     
-  connect: (timeout, retries) ->
+  connect: (timeout) ->
     
     # Create connection
     @connection = net.createConnection @port, @host
-    
+   
+    console.log "CONNECTING"
+ 
     # cleanup
     @ready = no
 
      # reject promise on close
     @connection.on 'close', () =>
       console.log "CLOSE"
-      @emit('reconnect', retries-1)
+      @emit('reconnect')
     
     # setup data listener
     @connection.on 'data', (data) => 
@@ -30,7 +32,7 @@ class EthernetDriver extends events.EventEmitter
     
     # reject promise on error
     @connection.on 'error', (error) =>
-      @emit('error', error)
+      console.log "ERROR"
     
     #resolve promise on connect
     @connection.on 'connect', () =>
