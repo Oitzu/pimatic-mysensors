@@ -15,7 +15,7 @@ class SerialPortDriver extends events.EventEmitter
       parser: serialport.parsers.readline("\n")
     }, openImmediately = no)
 
-  connect: (timeout, retries) ->
+  connect: (timeout) ->
     # cleanup
     @ready = no
     @serialPort.removeAllListeners('error')
